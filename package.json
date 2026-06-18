@@ -1,5 +1,5 @@
 {
-  "name": "@your-scope/api-football",
+  "name": "api-football-sdk",
   "version": "1.0.0",
   "description": "Fully typed API-Football v3 SDK",
   "license": "MIT",

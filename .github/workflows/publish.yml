@@ -1,26 +1,45 @@
 name: Publish
 
 on:
-  release:
-    types:
-      - published
+  push:
+    branches:
+      - main # Automatically runs whenever you merge or push to main
+
+permissions:
+  contents: write # Required to create the correct GitHub Release & Tag
+  id-token: write # Required for npm OIDC security authentication
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24 # Bypasses the old npm v10 handshake bugs
           registry-url: https://registry.npmjs.org
 
       - run: npm ci
 
       - run: npm run build
 
+      # 1. READ THE ACTUAL VERSION FROM PACKAGE.JSON (No more 'vmain'!)
+      - name: Extract version from package.json
+        id: get_version
+        run: echo "VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
+
+      # 2. AUTOMATICALLY CREATE THE CORRECT GITHUB RELEASE
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }} # Evaluates to exactly something like v1.0.4
+          name: Release v${{ env.VERSION }}
+          generate_release_notes: true # Gathers your commit messages into a changelog
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 3. PUBLISH TO NPM
       - run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
