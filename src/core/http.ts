@@ -1,230 +1,161 @@
 import {
-  ApiFootballError,
-  ApiFootballErrorDetails
-} from "./errors";
-
-import {
-  PROVIDER_DEFAULTS
-} from "./constants";
-
-import {
-  ApiFootballClientOptions
+  ApiFootballClientOptions,
+  ApiFootballResponse
 } from "../types/common";
 
-interface InternalRequestOptions extends RequestInit {
-  maxRetries?: number;
-  retryDelay?: number;
-  timeout?: number;
-  apiKey?: string;
-  host?: string;
-  baseUrl?: string;
-  extraHeaders?: Record < string, string > ;
-  fetchImpl?: typeof fetch;
-  throwOnApiError?: boolean;
-}
+import { ApiFootballError } from "./errors";
+import { buildQueryString, sleep } from "./utils";
 
-/**
- * Fetches a URL with retry and timeout capabilities.
- * @param url The URL to fetch.
- * @param options Request options including retry, timeout, and API configuration.
- * @returns The Response object.
- * @throws ApiFootballError on network errors, timeouts, or API errors if throwOnApiError is true.
- */
-async function fetchWithRetryAndTimeout(
-  url: string,
-  options: InternalRequestOptions = {}
-): Promise < Response > {
-  const {
-    maxRetries = 3,
-      retryDelay = 1000, // 1 second
-      timeout,
-      apiKey,
-      extraHeaders,
-      fetchImpl = fetch,
-      signal: originalSignal,
-      throwOnApiError = true,
-      ...requestInit
-  } = options;
-
-  let retries = 0;
-
-  while (retries <= maxRetries) {
-    const abortController = new AbortController();
-    const timeoutId = timeout ?
-      setTimeout(() => abortController.abort(), timeout) :
-      undefined;
-
-    // Combine external signal with internal timeout signal
-    const signal = new AbortSignal();
-    const handleAbort = () => abortController.abort();
-    if (originalSignal) {
-      originalSignal.addEventListener("abort", handleAbort, {
-        once: true
-      });
-    }
-    abortController.signal.addEventListener("abort", () => {
-      if (originalSignal) {
-        originalSignal.removeEventListener("abort", handleAbort);
-      }
-    }, {
-      once: true
-    });
-
-    try {
-      const headers = new Headers(requestInit.headers);
-      if (apiKey) {
-        headers.set("x-rapidapi-key", apiKey);
-      }
-      if (extraHeaders) {
-        for (const [key, value] of Object.entries(extraHeaders)) {
-          headers.set(key, value);
-        }
-      }
-
-      const response = await fetchImpl(url, {
-        ...requestInit,
-        headers,
-        signal: abortController.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        const errorDetails: ApiFootballErrorDetails = {
-          status: response.status,
-          url: url,
-        };
-        try {
-          errorDetails.body = await response.json();
-        } catch (e) {
-          errorDetails.body = await response.text();
-        }
-
-        if (response.status >= 500 && response.status < 600) {
-          // Server error, potentially retry
-          throw new ApiFootballError(
-            `Server error: ${response.status} ${response.statusText}`,
-            errorDetails
-          );
-        } else if (response.status === 429) {
-          // Rate limit error, potentially retry after a delay
-          throw new ApiFootballError("Rate limit exceeded", errorDetails);
-        } else if (throwOnApiError) {
-          // Client error or other unretriable error
-          throw new ApiFootballError(
-            `API error: ${response.status} ${response.statusText}`,
-            errorDetails
-          );
-        }
-      }
-
-      return response;
-    } catch (error: any) {
-      clearTimeout(timeoutId);
-
-      if (
-        error.name === "AbortError" &&
-        abortController.signal.reason === undefined
-      ) {
-        // This is a timeout or user-aborted request, not a network error for retry
-        throw new ApiFootballError(`Request timed out or was aborted.`, {
-          url,
-          cause: error
-        });
-      }
-
-      if (retries < maxRetries && (
-          error instanceof ApiFootballError &&
-          (error.status === 429 || (error.status && error.status >= 500))
-        )) {
-        retries++;
-        await new Promise((resolve) => setTimeout(resolve, retryDelay * retries)); // Exponential backoff for retry delay
-        continue; // Try again
-      } else if (error instanceof ApiFootballError) {
-        throw error;
-      } else {
-        throw new ApiFootballError(`Network or unexpected error: ${error.message}`, {
-          url,
-          cause: error
-        });
-      }
-    } finally {
-      if (originalSignal) {
-        originalSignal.removeEventListener("abort", handleAbort);
-      }
-    }
-  }
-  throw new ApiFootballError(`Failed to fetch ${url} after ${maxRetries} retries.`);
+export interface RateLimitState {
+  requestsRemaining?: number;
+  requestsLimit?: number;
+  dailyRemaining?: number;
 }
 
 export class HttpClient {
-  private options: ApiFootballClientOptions;
-  private defaultRequestOptions: InternalRequestOptions;
+  private readonly apiKey: string;
+
+  private readonly fetchImpl: typeof fetch;
+
+  private readonly timeout: number;
+
+  private readonly maxRetries: number;
+
+  private readonly retryDelay: number;
+
+  private readonly baseUrl: string;
+
+  readonly rateLimit: RateLimitState = {};
 
   constructor(options: ApiFootballClientOptions) {
-    this.options = { ...options
-    };
+    this.apiKey = options.apiKey;
 
-    const host =
-      options.host ||
-      (options.provider ?
-        PROVIDER_DEFAULTS[options.provider].host :
-        PROVIDER_DEFAULTS["api-sports"].host); // Default to api-sports host if no provider/host specified
+    this.fetchImpl =
+      options.fetchImpl ?? globalThis.fetch;
 
-    this.defaultRequestOptions = {
-      apiKey: options.apiKey,
-      baseUrl: options.baseUrl || `https://${host}`,
-      maxRetries: options.maxRetries,
-      retryDelay: options.retryDelay,
-      timeout: options.timeout,
-      extraHeaders: options.extraHeaders,
-      fetchImpl: options.fetchImpl,
-      throwOnApiError: options.throwOnApiError,
-    };
+    this.timeout = options.timeout ?? 10000;
+
+    this.maxRetries = options.maxRetries ?? 3;
+
+    this.retryDelay = options.retryDelay ?? 500;
+
+    this.baseUrl =
+      options.baseUrl ??
+      "https://v3.football.api-sports.io";
   }
 
-  /**
-   * Constructs the full request URL.
-   * @param path The API endpoint path.
-   * @returns The full URL string.
-   */
-  private buildUrl(path: string): string {
-    const baseUrl = this.defaultRequestOptions.baseUrl;
-    if (!baseUrl) {
-      throw new ApiFootballError("Base URL is not configured for the HTTP client.");
-    }
-    return `${baseUrl}/${path}`;
-  }
-
-  /**
-   * Performs a GET request.
-   * @param path The API endpoint path.
-   * @param queryParams Optional query parameters.
-   * @param requestOptions Additional request options.
-   * @returns The parsed JSON response.
-   */
-  async get < T > (
+  async get<T>(
     path: string,
-    queryParams ? : Record < string, string | number | boolean | undefined > ,
-    requestOptions ? : RequestInit
-  ): Promise < T > {
-    const url = new URL(this.buildUrl(path));
-    if (queryParams) {
-      Object.entries(queryParams).forEach(([key, value]) => {
-        if (value !== undefined) {
-          url.searchParams.append(key, String(value));
-        }
-      });
-    }
-
-    const response = await fetchWithRetryAndTimeout(url.toString(), {
-      ...this.defaultRequestOptions,
-      ...requestOptions,
-      method: "GET",
-    });
-
-    return response.json() as Promise < T > ;
+    params: Record<string, unknown> = {}
+  ): Promise<ApiFootballResponse<T>> {
+    return this.request<T>("GET", path, params);
   }
 
-  // Other HTTP methods (POST, PUT, DELETE) can be added here if needed for future API interactions.
+  async request<T>(
+    method: string,
+    path: string,
+    params: Record<string, unknown> = {}
+  ): Promise<ApiFootballResponse<T>> {
+    const query = buildQueryString(params);
+
+    const url =
+      query.length > 0
+        ? `${this.baseUrl}${path}?${query}`
+        : `${this.baseUrl}${path}`;
+
+    let lastError: unknown;
+
+    for (
+      let attempt = 0;
+      attempt <= this.maxRetries;
+      attempt++
+    ) {
+      try {
+        const controller = new AbortController();
+
+        const timeoutId = setTimeout(() => {
+          controller.abort();
+        }, this.timeout);
+
+        const response = await this.fetchImpl(url, {
+          method,
+          signal: controller.signal,
+          headers: {
+            "x-apisports-key": this.apiKey
+          }
+        });
+
+        clearTimeout(timeoutId);
+
+        this.captureRateLimits(response);
+
+        if (!response.ok) {
+          throw new ApiFootballError(
+            `HTTP ${response.status}`,
+            {
+              status: response.status,
+              url
+            }
+          );
+        }
+
+        const body =
+          (await response.json()) as ApiFootballResponse<T>;
+
+        return body;
+      } catch (error) {
+        lastError = error;
+
+        if (attempt === this.maxRetries) {
+          break;
+        }
+
+        await sleep(
+          this.retryDelay * (attempt + 1)
+        );
+      }
+    }
+
+    throw new ApiFootballError(
+      "Request failed after retries",
+      {
+        url: path,
+        cause: lastError
+      }
+    );
+  }
+
+  private captureRateLimits(
+    response: Response
+  ): void {
+    const remaining =
+      response.headers.get(
+        "x-ratelimit-requests-remaining"
+      );
+
+    const limit =
+      response.headers.get(
+        "x-ratelimit-requests-limit"
+      );
+
+    const dailyRemaining =
+      response.headers.get(
+        "x-ratelimit-day-remaining"
+      );
+
+    if (remaining) {
+      this.rateLimit.requestsRemaining =
+        Number(remaining);
+    }
+
+    if (limit) {
+      this.rateLimit.requestsLimit =
+        Number(limit);
+    }
+
+    if (dailyRemaining) {
+      this.rateLimit.dailyRemaining =
+        Number(dailyRemaining);
+    }
+  }
 }

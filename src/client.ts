@@ -1,46 +1,91 @@
-import {
-  ApiFootballClientOptions
-} from "./types/common";
-import {
-  HttpClient
-} from "./core/http";
-import {
-  ApiFootballError
-} from "./core/errors";
+import { HttpClient } from "./core/http";
+
+import { ApiFootballClientOptions } from "./types/common";
+
+import { TimezoneResource } from "./resources/timezone";
+import { CountriesResource } from "./resources/countries";
+import { LeaguesResource } from "./resources/leagues";
+import { TeamsResource } from "./resources/teams";
+import { FixturesResource } from "./resources/fixtures";
+import { StandingsResource } from "./resources/standings";
+import { PlayersResource } from "./resources/players";
+import { CoachesResource } from "./resources/coaches";
+import { OddsResource } from "./resources/odds";
 
 export class ApiFootballClient {
-  private _options: ApiFootballClientOptions;
-  private _httpClient: HttpClient;
+  readonly http: HttpClient;
 
-  constructor(options: ApiFootballClientOptions) {
-    if (!options.apiKey) {
-      throw new ApiFootballError("API Key is required.");
-    }
+  readonly timezone: TimezoneResource;
 
-    this._options = options;
-    this._httpClient = new HttpClient(options);
+  readonly countries: CountriesResource;
 
-    // Initialize resources here
-    // Example:
-    // this.countries = new CountriesResource(this._httpClient);
-    // this.leagues = new LeaguesResource(this._httpClient);
-    // ... and so on for all resources
+  readonly leagues: LeaguesResource;
+
+  readonly teams: TeamsResource;
+
+  readonly fixtures: FixturesResource;
+
+  readonly standings: StandingsResource;
+
+  readonly players: PlayersResource;
+
+  readonly coaches: CoachesResource;
+
+  readonly odds: OddsResource;
+
+  constructor(
+    options: ApiFootballClientOptions
+  ) {
+    this.http = new HttpClient(options);
+
+    this.timezone = new TimezoneResource(
+      this.http
+    );
+
+    this.countries = new CountriesResource(
+      this.http
+    );
+
+    this.leagues = new LeaguesResource(
+      this.http
+    );
+
+    this.teams = new TeamsResource(
+      this.http
+    );
+
+    this.fixtures = new FixturesResource(
+      this.http
+    );
+
+    this.standings = new StandingsResource(
+      this.http
+    );
+
+    this.players = new PlayersResource(
+      this.http
+    );
+
+    this.coaches = new CoachesResource(
+      this.http
+    );
+
+    this.odds = new OddsResource(
+      this.http
+    );
   }
 
-  // A generic method to perform a GET request using the underlying HttpClient
-  // This can be used for direct endpoint access or by resource classes
-  async get < T > (
-    path: string,
-    queryParams ? : Record < string, string | number | boolean | undefined > ,
-    requestOptions ? : RequestInit
-  ): Promise < T > {
-    return this._httpClient.get < T > (path, queryParams, requestOptions);
+  get rateLimit() {
+    return this.http.rateLimit;
   }
 
-  // Placeholder for resource properties. These will be instantiated and assigned in the constructor
-  // once the resource classes are defined.
-  // public countries: CountriesResource;
-  // public leagues: LeaguesResource;
-  // public teams: TeamsResource;
-  // ... etc
+  raw<T>(
+    endpoint: string,
+    params?: Record<string, unknown>
+  ) {
+    return this.http.get<T>(
+      endpoint,
+      params
+    );
+  }
 }
