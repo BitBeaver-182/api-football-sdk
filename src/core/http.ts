@@ -1,6 +1,7 @@
 import {
   ApiFootballClientOptions,
-  ApiFootballResponse
+  ApiFootballResponse,
+  ApiFootballProvider
 } from "../types/common";
 
 import { ApiFootballError } from "./errors";
@@ -12,36 +13,47 @@ export interface RateLimitState {
   dailyRemaining?: number;
 }
 
+const PROVIDER_DEFAULTS = {
+  "api-sports": {
+    host: "v3.football.api-sports.io",
+  },
+  rapidapi: {
+    host: "api-football-v1.p.rapidapi.com",
+  },
+};
+
 export class HttpClient {
   private readonly apiKey: string;
-
   private readonly fetchImpl: typeof fetch;
-
   private readonly timeout: number;
-
   private readonly maxRetries: number;
-
   private readonly retryDelay: number;
-
   private readonly baseUrl: string;
+  private readonly authHeaders: Record<string, string>;
 
   readonly rateLimit: RateLimitState = {};
 
   constructor(options: ApiFootballClientOptions) {
     this.apiKey = options.apiKey;
-
-    this.fetchImpl =
-      options.fetchImpl ?? globalThis.fetch;
-
-    this.timeout = options.timeout ?? 10000;
-
-    this.maxRetries = options.maxRetries ?? 3;
-
+    this.fetchImpl = options.fetchImpl ?? globalThis.fetch;
+    this.timeout = options.timeout ?? 30000;
+    this.maxRetries = options.maxRetries ?? 0;
     this.retryDelay = options.retryDelay ?? 500;
 
-    this.baseUrl =
-      options.baseUrl ??
-      "https://v3.football.api-sports.io";
+    const provider: ApiFootballProvider = options.provider ?? "api-sports";
+    const host = options.host ?? PROVIDER_DEFAULTS[provider].host;
+    this.baseUrl = options.baseUrl ?? `https://${host}`;
+
+    if (provider === "api-sports") {
+      this.authHeaders = {
+        "x-apisports-key": this.apiKey,
+      };
+    } else {
+      this.authHeaders = {
+        "x-rapidapi-key": this.apiKey,
+        "x-rapidapi-host": host,
+      };
+    }
   }
 
   async get<T>(
@@ -60,8 +72,8 @@ export class HttpClient {
 
     const url =
       query.length > 0
-        ? `${this.baseUrl}${path}?${query}`
-        : `${this.baseUrl}${path}`;
+        ? `${this.baseUrl.replace(/\/$/, "")}${path}?${query}`
+        : `${this.baseUrl.replace(/\/$/, "")}${path}`;
 
     let lastError: unknown;
 
@@ -81,7 +93,8 @@ export class HttpClient {
           method,
           signal: controller.signal,
           headers: {
-            "x-apisports-key": this.apiKey
+            ...this.authHeaders,
+            "Accept": "application/json"
           }
         });
 
@@ -129,33 +142,24 @@ export class HttpClient {
     response: Response
   ): void {
     const remaining =
-      response.headers.get(
-        "x-ratelimit-requests-remaining"
-      );
+      response.headers.get("x-ratelimit-requests-remaining");
 
     const limit =
-      response.headers.get(
-        "x-ratelimit-requests-limit"
-      );
+      response.headers.get("x-ratelimit-requests-limit");
 
     const dailyRemaining =
-      response.headers.get(
-        "x-ratelimit-day-remaining"
-      );
+      response.headers.get("x-ratelimit-day-remaining");
 
     if (remaining) {
-      this.rateLimit.requestsRemaining =
-        Number(remaining);
+      this.rateLimit.requestsRemaining = Number(remaining);
     }
 
     if (limit) {
-      this.rateLimit.requestsLimit =
-        Number(limit);
+      this.rateLimit.requestsLimit = Number(limit);
     }
 
     if (dailyRemaining) {
-      this.rateLimit.dailyRemaining =
-        Number(dailyRemaining);
+      this.rateLimit.dailyRemaining = Number(dailyRemaining);
     }
   }
 }

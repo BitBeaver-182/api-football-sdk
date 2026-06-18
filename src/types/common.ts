@@ -1,44 +1,24 @@
-export interface ApiFootballPaging {
-  current: number;
-  total: number;
-}
-
-export interface ApiFootballResponse<T> {
-  get: string | string[];
-
-  parameters: Record<string, string>;
-
-  errors: string[] | Record<string, string>;
-
-  results: number;
-
-  paging: ApiFootballPaging;
-
-  response: T;
-}
-
-export interface RequestOptions {
-  signal?: AbortSignal;
-}
+export type ApiFootballProvider = "api-sports" | "rapidapi";
 
 export interface ApiFootballClientOptions {
   apiKey: string;
-
-  provider?: "api-sports" | "rapidapi";
-
+  provider?: ApiFootballProvider;
   host?: string;
-
   baseUrl?: string;
-
   timeout?: number;
-
   maxRetries?: number;
-
   retryDelay?: number;
-
-  extraHeaders?: Record<string, string>;
-
   fetchImpl?: typeof fetch;
+}
 
-  throwOnApiError?: boolean;
+export interface ApiFootballResponse<T> {
+  get: string;
+  parameters: Record<string, unknown>;
+  errors: string[] | Record<string, string>;
+  results: number;
+  paging: {
+    current: number;
+    total: number;
+  };
+  response: T;
 }
