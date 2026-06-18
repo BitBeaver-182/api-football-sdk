@@ -129,6 +129,10 @@ export class HttpClient {
       }
     }
 
+    if (lastError instanceof ApiFootballError) {
+      throw lastError;
+    }
+
     throw new ApiFootballError(
       "Request failed after retries",
       {
