@@ -1,40 +1,43 @@
-name: Publish
+name: Release and Publish
 
 on:
   push:
     branches:
-      - main # Only runs when code lands on main
+      - main
 
 permissions:
-  contents: write # Required to create the GitHub Release
-  id-token: write # Required if you use npm OIDC / Provenance
+  contents: write
+  pull-requests: write
+  id-token: write
 
 jobs:
-  publish:
+  release-please:
     runs-on: ubuntu-latest
     steps:
+      # 1. Automated versioning and GitHub Release creation
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          release-type: node
+
+      # 2. These steps ONLY run if a Release PR was just merged
       - uses: actions/checkout@v4
+        if: ${{ steps.release.outputs.release_created }}
 
       - uses: actions/setup-node@v4
+        if: ${{ steps.release.outputs.release_created }}
         with:
-          node-version: 24 # Use 24 to avoid the npm v10 handshake bug
+          node-version: 24
           registry-url: https://registry.npmjs.org
 
       - run: npm ci
+        if: ${{ steps.release.outputs.release_created }}
 
       - run: npm run build
+        if: ${{ steps.release.outputs.release_created }}
 
-      # Automatically reads package.json version, creates tag, and creates the GitHub Release
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ github.ref_name }} # Uses branch/commit state or you can hardcode a tracking method
-          name: Release ${{ github.ref_name }}
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # Publishes cleanly to npm
+      # 3. Flings it directly onto npm
       - run: npm publish --access public
+        if: ${{ steps.release.outputs.release_created }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
