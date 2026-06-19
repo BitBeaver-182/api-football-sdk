@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/BitBeaver-182/api-football-sdk/compare/football-data-sdk-v1.0.1...football-data-sdk-v1.0.2) (2026-06-19)
+
+
+### Bug Fixes
+
+* score interface ([14eab66](https://github.com/BitBeaver-182/api-football-sdk/commit/14eab667cddc793e7bd2914978809d22eec978e4))
+
 ## [1.0.1](https://github.com/BitBeaver-182/api-football-sdk/compare/football-data-sdk-v1.0.0...football-data-sdk-v1.0.1) (2026-06-19)
 
 
