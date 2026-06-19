@@ -216,7 +216,7 @@ export interface Penalty {
 }
 
 export interface Score {
-  winner: Winner | null;
+  winner: "AWAY" | "HOME" | "DRAW" | null;
   duration: string;
   fullTime: FullTime;
   halfTime: FullTime;
