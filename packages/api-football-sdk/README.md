@@ -10,7 +10,7 @@ A complete, fully-typed TypeScript SDK for [API-FOOTBALL v3](https://www.api-foo
 - **Full Coverage**: Every documented endpoint (Timezones, Countries, Leagues, Teams, Fixtures, Odds, Players, etc.).
 - **Strongly Typed**: Comprehensive TypeScript interfaces for every request parameter and response payload.
 - **Dual Provider Support**: Seamlessly switch between direct API-Sports and RapidAPI.
-- **Robust Core**: Built-in support for retries, timeouts, and rate-limit tracking
+- **Robust Core**: Built-in support for retries, timeouts, and rate-limit tracking.
 - **Zero Dependencies**: Uses the native `fetch` API (Node.js 18+, Bun, Deno, or Browser).
 
 ## Installation
