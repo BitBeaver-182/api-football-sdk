@@ -9,7 +9,7 @@ A complete, fully-typed TypeScript SDK for [Football-Data.org API v4](https://do
 
 - **Full Coverage**: Exposes every v4 resource (Areas, Competitions, Standings, Matches, Teams, Persons, and Trends).
 - **Strongly Typed**: Comprehensive TypeScript interfaces for every resource response and query parameter filter.
-- **Modern Architecture**: Clean resource-based namespaces mirroring the documentation endpoints
+- **Modern Architecture**: Clean resource-based namespaces mirroring the documentation endpoints.
 - **Zero Dependencies**: Built on top of the native `fetch` API, fully compatible with Node.js, Bun, Deno, and Edge environments.
 - **Cache Friendly**: Built-in support for Next.js `revalidate` options and tags.
 
@@ -92,14 +92,14 @@ const trends = await client.trends.get({
 
 ## API Coverage
 
-| Category         | Client Property | Key Methods                                                                      |
-| :--------------- | :-------------- | :------------------------------------------------------------------------------- |
-| **Areas**        | `areas`         | `list()`, `get(id)`                                                              |
-| **Competitions** | `competitions`  | `list(filters)`, `get(code)`, `standings()`, `matches()`, `teams()`, `scorers()` |
-| **Matches**      | `matches`       | `list(filters)`, `live()`, `get(id)`, `head2head(id, filters)`                   |
-| **Teams**        | `teams`         | `get(id)`, `matches(id, filters)`                                                |
-| **Athletes**     | `persons`       | `get(id)`, `matches(id, filters)`                                                |
-| **Analytics**    | `trends`        | `get(filters)`                                                                   |
+| Category         | Client Property   | Key Methods                                                       |
+| :--------------- | :---------------- | :---------------------------------------------------------------- |
+| **Areas**        | `areas`           | `list()`, `get(id)`                                               |
+| **Competitions** | `competitions`    | `list(filters)`, `get(code)`, `standings()`, `matches()`, `teams()`, `scorers()` |
+| **Matches**      | `matches`         | `list(filters)`, `live()`, `get(id)`, `head2head(id, filters)`    |
+| **Teams**        | `teams`           | `get(id)`, `matches(id, filters)`                                 |
+| **Athletes**     | `persons`         | `get(id)`, `matches(id, filters)`                                 |
+| **Analytics**    | `trends`          | `get(filters)`                                                    |
 
 ## TypeScript Support
 
