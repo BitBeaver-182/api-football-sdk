@@ -12,6 +12,13 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
+
+    # Crucial: If you intend to use OIDC/provenance, add this block.
+    # Otherwise, Node 24 + npm v11 will cleanly pass your NPM_TOKEN.
+    permissions:
+      contents: read
+      id-token: write
+
     steps:
       - uses: actions/checkout@v4
 
