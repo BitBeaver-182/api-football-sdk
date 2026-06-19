@@ -1,6 +1,6 @@
 {
-  "name": "@BitBeaver-182/api-football-sdk",
-  "version": "1.0.3",
+  "name": "api-football-sdk",
+  "version": "1.0.0",
   "description": "Fully typed API-Football v3 SDK",
   "license": "MIT",
   "type": "module",
