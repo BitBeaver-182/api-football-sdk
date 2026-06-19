@@ -13,31 +13,29 @@ permissions:
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
     steps:
-      # 1. Automated versioning and GitHub Release creation
       - uses: googleapis/release-please-action@v4
         id: release
         with:
           release-type: node
 
-      # 2. These steps ONLY run if a Release PR was just merged
+  publish:
+    runs-on: ubuntu-latest
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
+    steps:
       - uses: actions/checkout@v4
-        if: ${{ steps.release.outputs.release_created }}
 
       - uses: actions/setup-node@v4
-        if: ${{ steps.release.outputs.release_created }}
         with:
           node-version: 24
-          registry-url: https://registry.npmjs.org
+          registry-url: https://registry.npmjs.org/
 
       - run: npm ci
-        if: ${{ steps.release.outputs.release_created }}
-
       - run: npm run build
-        if: ${{ steps.release.outputs.release_created }}
 
-      # 3. Flings it directly onto npm
       - run: npm publish --access public
-        if: ${{ steps.release.outputs.release_created }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
