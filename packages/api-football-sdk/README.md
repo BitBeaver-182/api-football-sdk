@@ -28,16 +28,16 @@ pnpm add api-football-sdk
 ### Basic Usage (Direct API-Sports)
 
 ```typescript
-import { ApiFootballClient } from 'api-football-sdk';
+import { ApiFootballClient } from "api-football-sdk";
 
 const football = new ApiFootballClient({
-  apiKey: 'your_api_sports_key'
+  apiKey: "your_api_sports_key",
 });
 
 // Fetch current Premier League standings
 const { response } = await football.standings.get({
   league: 39,
-  season: 2024
+  season: 2024,
 });
 
 console.log(response[0].league.standings);
@@ -47,8 +47,8 @@ console.log(response[0].league.standings);
 
 ```typescript
 const football = new ApiFootballClient({
-  apiKey: 'your_rapidapi_key',
-  provider: 'rapidapi'
+  apiKey: "your_rapidapi_key",
+  provider: "rapidapi",
 });
 ```
 
@@ -78,7 +78,7 @@ For complex endpoints like Fixtures, sub-resources are used for better organizat
 const stats = await football.fixtures.statistics.get({ fixture: 215662 });
 
 // Get live scores for specific leagues
-const live = await football.fixtures.live({ league: '39-61' });
+const live = await football.fixtures.live({ league: "39-61" });
 ```
 
 ### Rate Limit Tracking
@@ -96,26 +96,26 @@ console.log(football.rateLimit);
 
 ```typescript
 const football = new ApiFootballClient({
-  apiKey: '...',
-  timeout: 15000,      // 15s timeout
-  maxRetries: 3,       // Retry on 5xx errors or timeouts
-  retryDelay: 1000,    // Base delay for linear backoff
+  apiKey: "...",
+  timeout: 15000, // 15s timeout
+  maxRetries: 3, // Retry on 5xx errors or timeouts
+  retryDelay: 1000, // Base delay for linear backoff
 });
 ```
 
 ## API Coverage
 
-| Category | Client Property | Key Methods |
-| :--- | :--- | :--- |
-| **Global** | `timezone`, `countries` | `list()`, `get()` |
-| **Competitions** | `leagues`, `standings` | `get()`, `seasons()` |
-| **Teams** | `teams`, `venues` | `get()`, `statistics()`, `seasons()` |
-| **Matches** | `fixtures` | `get()`, `live()`, `headToHead()`, `rounds()` |
-| **In-Match** | `fixtures.statistics`, `fixtures.events`, `fixtures.lineups` | `get()` |
-| **Athletes** | `players`, `coaches` | `get()`, `seasons()`, `squads.get()` |
-| **Rankings** | `players.topScorers`, `players.topAssists` | `get()` |
-| **Betting** | `odds`, `odds.live` | `get()`, `mapping.get()`, `bets.get()` |
-| **Extras** | `injuries`, `predictions`, `transfers`, `trophies` | `get()` |
+| Category         | Client Property                                              | Key Methods                                   |
+| :--------------- | :----------------------------------------------------------- | :-------------------------------------------- |
+| **Global**       | `timezone`, `countries`                                      | `list()`, `get()`                             |
+| **Competitions** | `leagues`, `standings`                                       | `get()`, `seasons()`                          |
+| **Teams**        | `teams`, `venues`                                            | `get()`, `statistics()`, `seasons()`          |
+| **Matches**      | `fixtures`                                                   | `get()`, `live()`, `headToHead()`, `rounds()` |
+| **In-Match**     | `fixtures.statistics`, `fixtures.events`, `fixtures.lineups` | `get()`                                       |
+| **Athletes**     | `players`, `coaches`                                         | `get()`, `seasons()`, `squads.get()`          |
+| **Rankings**     | `players.topScorers`, `players.topAssists`                   | `get()`                                       |
+| **Betting**      | `odds`, `odds.live`                                          | `get()`, `mapping.get()`, `bets.get()`        |
+| **Extras**       | `injuries`, `predictions`, `transfers`, `trophies`           | `get()`                                       |
 
 ## TypeScript Support
 
