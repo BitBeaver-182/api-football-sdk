@@ -1,11 +1,5 @@
 import { footballData } from "./client";
-import { Area } from "./types";
-
-export interface AreasResult {
-  count: number;
-  filters: Record<string, unknown>;
-  areas: Area[];
-}
+import { Area, AreasResult } from "./types";
 
 export async function getAreas() {
   return footballData.get<AreasResult>("/areas");

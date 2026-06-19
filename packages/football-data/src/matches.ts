@@ -1,20 +1,10 @@
 import {
   MatchesApiFilters,
   Match,
+  MatchesResult,
 } from "./types";
 
 import { footballData } from "./client";
-
-export interface MatchesResult {
-  filters: Record<string, unknown>;
-  resultSet: {
-    count: number;
-    first?: string;
-    last?: string;
-    played?: number;
-  };
-  matches: Match[];
-}
 
 export async function getMatches(
   filters?: Partial<MatchesApiFilters>,
