@@ -1,0 +1,14 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "primary-branch": "main",
+  "packages": {
+    "packages/api-football-sdk": {
+      "release-type": "node",
+      "package-name": "api-football-sdk"
+    },
+    "packages/football-data": {
+      "release-type": "node",
+      "package-name": "football-data-sdk"
+    }
+  }
+}
