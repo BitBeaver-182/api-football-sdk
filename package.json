@@ -1,45 +1,15 @@
 {
-  "name": "api-football-sdk",
-  "version": "1.0.0",
-  "description": "Fully typed API-Football v3 SDK",
-  "license": "MIT",
-  "type": "module",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    }
-  },
-  "files": [
-    "dist"
-  ],
+  "name": "api-football-sdk-monorepo",
+  "private": true,
   "engines": {
     "node": ">=18"
   },
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "lint": "eslint .",
-    "prepublishOnly": "npm run build"
+    "build": "pnpm --filter \"*\" build",
+    "typecheck": "pnpm --filter \"*\" typecheck",
+    "test": "pnpm --filter \"*\" test"
   },
-  "keywords": [
-    "football",
-    "soccer",
-    "api-football",
-    "api-sports",
-    "sports"
-  ],
   "devDependencies": {
-    "@types/node": "^24.0.0",
-    "tsup": "^8.5.0",
-    "typescript": "^5.8.0",
-    "vitest": "^3.2.0"
+    "typescript": "^5.8.0"
   }
 }
