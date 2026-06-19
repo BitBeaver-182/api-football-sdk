@@ -1,0 +1,40 @@
+name: Publish
+
+on:
+  push:
+    branches:
+      - main # Only runs when code lands on main
+
+permissions:
+  contents: write # Required to create the GitHub Release
+  id-token: write # Required if you use npm OIDC / Provenance
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24 # Use 24 to avoid the npm v10 handshake bug
+          registry-url: https://registry.npmjs.org
+
+      - run: npm ci
+
+      - run: npm run build
+
+      # Automatically reads package.json version, creates tag, and creates the GitHub Release
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.ref_name }} # Uses branch/commit state or you can hardcode a tracking method
+          name: Release ${{ github.ref_name }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Publishes cleanly to npm
+      - run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
